@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lex-AI | Offline Legal Document Analyzer</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f6f9; color: #1e293b; margin: 0; padding: 20px; }
+        .container { max-width: 960px; margin: 0 auto; background: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        h1 { color: #0f172a; border-bottom: 2px solid #e2e8f0; padding-bottom: 10px; }
+        .upload-box { border: 2px dashed #94a3b8; padding: 30px; text-align: center; border-radius: 8px; background: #f8fafc; margin-bottom: 25px; }
+        .btn { background: #1d4ed8; color: white; border: none; padding: 12px 24px; font-size: 16px; border-radius: 6px; cursor: pointer; margin-top: 15px; }
+        .btn:hover { background: #1e40af; }
+        .error { background: #fee2e2; color: #b91c1c; padding: 12px; border-radius: 6px; margin-bottom: 20px; }
+        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-top: 20px; }
+        .card { background: #f8fafc; border: 1px solid #e2e8f0; padding: 18px; border-radius: 8px; }
+        .card h3 { margin-top: 0; color: #1e3a8a; font-size: 1.1rem; }
+        .badge { display: inline-block; background: #dbeafe; color: #1e40af; padding: 4px 10px; border-radius: 999px; font-size: 0.85rem; margin: 3px; }
+        .clause-badge { background: #dcfce7; color: #166534; }
+        pre { background: #0f172a; color: #f8fafc; padding: 15px; border-radius: 6px; white-space: pre-wrap; max-height: 250px; overflow-y: auto; font-size: 0.85rem; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>⚖️ Lex-AI Legal Document Analyzer</h1>
+        <p>100% Local & Offline Analysis — Supports <strong>PDF, DOCX, TXT, and JPEG</strong></p>
+        {% if error %}
+            <div class="error">{{ error }}</div>
+        {% endif %}
+        <form method="POST" enctype="multipart/form-data" class="upload-box">
+            {% csrf_token %}
+            <input type="file" name="legal_doc" accept=".pdf,.txt,.docx,.jpg,.jpeg" required>
+            <br>
+            <button type="submit" class="btn">Analyze Legal Document</button>
+        </form>
+        {% if analysis %}
+            <h2>Analysis Results: {{ filename }} ({{ analysis.word_count }} words)</h2>
+            <div class="card">
+                <h3>Executive Summary</h3>
+                <p>{{ analysis.summary }}</p>
+            </div>
+            <div class="grid">
+                <div class="card">
+                    <h3>Detected Legal Clauses</h3>
+                    {% if analysis.clauses %}
+                        {% for clause in analysis.clauses %}
+                            <span class="badge clause-badge">✔ {{ clause }}</span>
+                        {% endfor %}
+                    {% else %}
+                        <p>No standard legal clauses detected.</p>
+                    {% endif %}
+                </div>
+                <div class="card">
+                    <h3>Extracted Entities</h3>
+                    {% for category, items in analysis.entities.items %}
+                        <p><strong>{{ category }}:</strong>
+                        {% if items %}
+                            {% for item in items|slice:":8" %}
+                                <span class="badge">{{ item }}</span>
+                            {% endfor %}
+                        {% else %}
+                            <span>None found</span>
+                        {% endif %}
+                        </p>
+                    {% endfor %}
+                </div>
+            </div>
+           <div class="card" style="margin-top: 20px;">
+                <h3>Extracted Document Text Preview</h3>
+                <pre>{{ raw_text }}</pre>
+            </div>
+        {% endif %}
+    </div>
+</body>
+</html>

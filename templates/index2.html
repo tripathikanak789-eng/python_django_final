@@ -1,0 +1,65 @@
+<!-- templates/analyze.html -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Legal Document Analyzer</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 40px; background-color: #f4f7f6; color: #333; }
+        .container { max-width: 700px; background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); }
+        .form-group { margin-bottom: 20px; }
+        .btn { background-color: #2c3e50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn:hover { background-color: #34495e; }
+        .error { color: #c0392b; background: #fde8e7; padding: 10px; border-radius: 4px; margin-bottom: 20px; }
+        .results-box { background: #ecf0f1; border-left: 5px solid #2980b9; padding: 20px; margin-top: 30px; border-radius: 4px; }
+        .flagged { border-left-color: #e74c3c; background: #fadbd8; }
+        ul { padding-left: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Legal Document Clause Analyzer</h2>
+    <p>Upload a plain text contract or document legal file to scan for standard regulatory and risk keywords.</p>
+
+    {% if error_message %}
+        <div class="error">{{ error_message }}</div>
+    {% endif %}
+
+    <!-- Multipart form is critical for file parsing -->
+    <form method="POST" enctype="multipart/form-data" action="{% url 'index2' %}">
+        {% csrf_token %}
+        <div class="form-group">
+            <label for="legal_doc"><strong>Select Legal Document (.txt):</strong></label><br><br>
+            <input type="file" id="legal_doc" name="legal_doc" accept=".txt" required>
+        </div>
+        <button type="submit" class="btn">Analyze Document</button>
+    </form>
+
+    {% if analysis_results %}
+        <div class="results-box {% if analysis_results.is_flagged %}flagged{% endif %}">
+            <h3>Analysis Summary</h3>
+            <p><strong>File Target:</strong> {{ analysis_results.file_name }} ({{ analysis_results.file_size }})</p>
+            <p><strong>Character Count:</strong> {{ analysis_results.total_characters }}</p>
+            
+            <h4>Detected Legal Clauses / Key Terms:</h4>
+            {% if analysis_results.risk_keywords_found %}
+                <ul>
+                {% for keyword, count in analysis_results.risk_keywords_found.items %}
+                    <li><strong>{{ keyword }}:</strong> Mentioned {{ count }} time(s)</li>
+                {% endfor %}
+                </ul>
+            {% else %}
+                <p>No standard risk keywords flags detected in this document.</p>
+            {% endif %}
+
+            {% if analysis_results.is_flagged %}
+                <p style="color: #c0392b; font-weight: bold;">⚠️ Warning: High density of risk/termination indicators detected.</p>
+            {% endif %}
+        </div>
+    {% endif %}
+</div>
+
+</body>
+</html>

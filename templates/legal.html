@@ -1,0 +1,69 @@
+<html lang=en>
+<head>
+<link ref="icon" href="data">
+    <meta charset="UTF-8">
+    <title>Lex-AI Legal Analyzer</title>
+    <style>
+        body { font-family: Arial, sans-serif; display: flex; margin: 0; height: 100vh; }
+        .sidebar { width: 30%; border-right: 1px solid #ccc; padding: 20px; }
+        .main-content { width: 70%; padding: 20px; display: flex; flex-direction: column; }
+        .chat-box { flex-grow: 1; border: 1px solid #ddd; margin-top: 20px; padding: 10px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+   <div class="sidebar">
+        <h2>Lex-AI Upload</h2>
+        <input type="file" id="docFile">
+        <button onclick="uploadDocument()">Upload & Analyze</button>      
+        <div id="analysisResult" style="margin-top:20px;">
+            <h3>Analysis Output</h3>
+            <p><strong>Summary:</strong> <span id="summary">-</span></p>
+            <p><strong>Jurisdiction:</strong> <span id="law">-</span></p>
+        </div>
+    </div>
+    <div class="main-content">
+        <h2>Document Chat</h2>
+        <div class="chat-box" id="chatBox"></div>
+        <div style="margin-top: 10px;">
+            <input type="text" id="queryInput" style="width: 80%;" placeholder="Ask a question about the contract...">
+            <button onclick="askQuestion()">Send</button>
+        </div>
+    </div>
+    <script>
+        let currentDocId = null;
+        async function uploadDocument() {
+            const fileInput = document.getElementById('docFile');
+            if (!fileInput.files[0]) return alert("Please select a file.");
+            const formData = new FormData();
+            formData.append('document', fileInput.files[0]);
+            // 1. Upload file
+            const uploadRes = await fetch('/api/upload/', { method: 'POST', body: formData });
+            const uploadData = await uploadRes.json();          
+            if(uploadData.document_id) {
+                currentDocId = uploadData.document_id;
+                document.getElementById('chatBox').innerHTML += `<p><i>System: Document uploaded. Analyzing...</i></p>`;            
+                // 2. Trigger Analysis
+                const analyzeRes = await fetch(`/api/analyze/${currentDocId}/`);
+                const analyzeData = await analyzeRes.json();           
+                document.getElementById('summary').innerText = analyzeData.analysis.summary;
+                document.getElementById('law').innerText = analyzeData.analysis.governing_law;
+            }
+        }
+        async function askQuestion() {
+            if (!currentDocId) return alert("Upload a document first.");
+            const query = document.getElementById('queryInput').value;
+            if (!query) return
+            const chatBox = document.getElementById('chatBox');
+            chatBox.innerHTML += `<p><strong>You:</strong> ${query}</p>`;
+            document.getElementById('queryInput').value = '';
+            const response = await fetch(`/api/chat/${currentDocId}/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ query: query })
+            });
+            const data = await response.json();
+            chatBox.innerHTML += `<p><strong>Lex-AI:</strong> ${data.reply}</p>`;
+        }
+    </script>
+</body>
+</html>
